@@ -1,0 +1,31 @@
+{
+  "name": "DeployToKubernetes",
+  "version": "1.0.0",
+  "description": "- This example uses [minikube](https://kubernetes.io/docs/setup/learning-environment/minikube/) to run a single-node kubernetes cluster inside a VM on your local machine.  - [Kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/) is a command-line tool that allows you to run commands against a kubernetes cluster. We will be using this to create deployments, and monitor our cluster.",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "nodemon --legacy-watch -e ts --exec \"npm run start\"",
+    "start": "tsc && node dist/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Aidantaylorlynch/DeployToKubernetes.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Aidantaylorlynch/DeployToKubernetes/issues"
+  },
+  "homepage": "https://github.com/Aidantaylorlynch/DeployToKubernetes#readme",
+  "dependencies": {
+    "express": "^4.17.1"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.0",
+    "nodemon": "^1.19.1",
+    "typescript": "^3.5.3"
+  }
+}

@@ -132,8 +132,141 @@ docker push myContainerRegistry/myImageName
 - Your image is now available on Dockerhub, or your Azure Container Registry.
 
 ## Create a Kubernetes cluster
+#### Start Minikube
+To start the local kubernetes cluster, open a terminal and run:
+~~~~
+minikube start
+~~~~
+
+#### Using Kubectl
+Now that we have a cluster running, we can use the **kubectl** to interact with it. Run:
+~~~~
+minikube status
+~~~~
+- You should see that host, kubelet, apiserver all running, and the kubectl correctly configured.
+
+For a list of basic commands:
+~~~~
+kubectl help
+~~~~
+
 ## Create a deployment
+Minikube runs a **single-node** on a VM to which will be the home for any pods that we create. However, it is rare that you will need to create/think about kubernetes in terms on pods. It is recommended that instead you create deployments, which describe the entire desired state of the cluster; including pods.
+
+- Start by creating ```deployment.yml```, this is how we will **describe** the deployment. This is where the VSCode Kubernetes extension will come in handy, although it is not necessary.
+
+Here is the what our first deployment will look like:
+~~~~
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp
+spec:
+  selector:
+    matchLabels:
+      app: myapp
+  template:
+    metadata:
+      labels:
+        app: myapp
+    spec:
+      containers:
+      - name: myapp
+        image: yoloswaggins.azurecr.io/mynodeapp
+        ports:
+        - containerPort: 3000
+      imagePullSecrets:
+        - name: azurecr
+~~~~
+The deployment file we just created was generated using the [kubernetes-api reference](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.15/#deployment-v1-apps) for **deployments**. Following this reference we can see that:
+
+#### kind
+- This is how we specify what resource we want to create/update. This could also be a **pod**, but as mentioned before it is better to work in **deployments**.
+
+#### metadata
+- **name** - this is what the deployment will be named, and must be unique.
+
+#### spec
+- Spec is how we define what sort of behaviour we want this deployment to have. For example, how our pods should be created.
+- **selector** - this selector property is used to select which pods should be affected/targeted by this deployment. Any pods with the matching label will be affected.
+
+#### template
+- this describes the pods that will be 
+created.
+- **template - labels** - this is the label that you are assigning to the pods being created. As mentioned in previous steps, this property is what the **selector** selects.
+
+#### spec
+- Spec is how we define what sort of behaviour we want the pods to have. This is differentiated from the previous **spec** by its position in the ```deployments.yml``` file. As this comes after the first spec, it is relating to **pod** behaviour, where as the first mention of spec relates to the behaviour of the **deployment**.
+- **containers** - this is a list of containers and their corresponding properties that will belong to this pod. You should only list multiple containers if they are tightly coupled.
+-- **containers - name** - this is the name that will be given to the container when it is created.
+-- **containers - image** - this is the name of the image that you want to use. for example ```myContainerRegistry.azurecr.io/myImage```.
+-- **containers - ports** - the port that you want to expose on the container.
+-- **imagePullSecrets** - this property should be used when the image you are deployming is located in a private repository. See below on how to create a **secret**.
+
+
+#### Create a secret - using an image from a private repository (Azure Container Registry)
+- To use an image from a private repository, we need some way for the kubernetes-api to use our repository credentials to successfully pull the image.
+- We can use **kubectl** to create a secure secret using our credentials like so:
+~~~~
+kubectl create secret docker-registry my-secrets-name --docker-server=myContainerRegistry.azurecr.io --docker-username=myContainerRegistry --docker-password myPasswordFromAccessKeys --docker-email=myContainerRegistry@email.com
+~~~~
+- Note: **docker-registry** is a type of secret. If you don't add the required flags, **kubectl** will output an error.
+
+#### Deploy
+- Using **kubectl** we can use ```deployment.yml``` to finally deploy our image to the cluster:
+~~~~
+kubectl create -f deployment.yml
+~~~~
+- The ```-f``` flag allows us to create a deployment using our yml file.  
+
+Inspect the deployment using:
+~~~~
+kubectl get deployments
+~~~~
+- You should see **1/1 Ready** once the image pull has finished. You may have to run this command a few times.  
+
+Inspect the pods using:
+~~~~
+kubectl get pods
+~~~~
+- You should see **1/1 Ready** once the image pull has finished. You may have to run this command a few times. 
+
+Finally, lets make sure our app is running as expected by coping the **NAME** that was listed in the previous command and running:
+~~~~
+kubectl logs myapp-<unique>-<identifier>
+~~~~
+- This should output:
+~~~~
+> DeployToKubernetes@1.0.0 start /app
+> tsc && node dist/index.js
+
+app listening on port  3000
+~~~~
+#### Additional
+Run the following command for more information about the deployment:
+~~~~
+kubectl describe deployment myapp
+~~~~
+- Note: you should see inside the **Pod Template** a container with the name and details you specified in the ```deployment.yml```.
+
 ## Expose a deployment
+Our app is running, but in order to access it from outside the cluster we need to create a **service**. Following the [Kubernetes Docs](https://kubernetes.io/docs/tasks/access-application-cluster/service-access-application-cluster/) we can do the following.
+- Create a service by using the expose command:
+~~~~
+kubectl expose deployment myapp --type=NodePort --port=3000
+~~~~
+- Because we are using **Minikube** we need to use the type **NodePort**. This essentially exposes the **node** that our Pods are running on. If you were deployed to a production environment, you would use the type **LoadBalancer**.
+- To view your application in the browser run:
+~~~~
+minikube service myapp
+~~~~
+- Minikube will open a browser and direct you to your app. You can also run the same command with the **--url** flag which will output the **IP address** of the application instead: 
+~~~~
+minikube service myapp --url
+~~~~
+
 ## Updating a deployment
+
+
 ## Cleaning up
 
