@@ -18,4 +18,16 @@ spec:
         - containerPort: 3000
       imagePullSecrets:
         - name: azurecr
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: myapp
+spec:
+  selector:
+    app: myapp
+  ports:
+  - port: 3000
+    targetPort: 3000
+  type: NodePort
 

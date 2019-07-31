@@ -215,9 +215,10 @@ kubectl create secret docker-registry my-secrets-name --docker-server=myContaine
 #### Deploy
 - Using **kubectl** we can use ```deployment.yml``` to finally deploy our image to the cluster:
 ~~~~
-kubectl create -f deployment.yml
+kubectl create -f deployment.yml --save-config
 ~~~~
 - The ```-f``` flag allows us to create a deployment using our yml file.  
+- The ```--save-config``` flag allows us to use the ***apply** command later on to **update** this resource.
 
 Inspect the deployment using:
 ~~~~
@@ -266,7 +267,71 @@ minikube service myapp --url
 ~~~~
 
 ## Updating a deployment
+Instead of manually creating this service, lets move it into ```deployment.yml```.
+- Here is how we do that:
+~~~~
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp
+spec:
+  selector:
+    matchLabels:
+      app: myapp
+  template:
+    metadata:
+      labels:
+        app: myapp
+    spec:
+      containers:
+      - name: myapp
+        image: yoloswaggins.azurecr.io/mynodeapp
+        ports:
+        - containerPort: 3000
+      imagePullSecrets:
+        - name: azurecr
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: myapp
+spec:
+  selector:
+    app: myapp
+  ports:
+  - port: 3000
+    targetPort: 3000
+  type: NodePort
+~~~~
+- About half-way down we added ***---***, which allows us to specify multiple resources.
+- You should be able to read through the newly added resource and see that we are creating a **service** of type **NodePort** on port **3000**.  
 
+Lets make use of the **apply** command, so first we want to delete the service we created on our cluster before:
+~~~~
+kubectl delete service myapp
+~~~~
+- Now that our deployment no longer has a service, lets run our new ```deployment.yml```:
+~~~~
+kubectl apply -f deployment.yml
+~~~~
+- You should see the service being added.
+- Again run the following to see the app:
+~~~~
+kubectl service myapp
+~~~~
 
 ## Cleaning up
+To delete our deployment and service we can either use the delete commands:
+~~~~
+kubectl delete deployment myapp
+kubectl delete service myapp
+~~~~
+or, we can use our ```deployment.yml```:
+~~~~
+kubectl delete -f deployment.yml
+~~~~
+Finally, stop minikube:
+~~~~
+minikube stop
+~~~~
 
